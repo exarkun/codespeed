@@ -45,7 +45,7 @@
     var series = new Array();
     var lastvalues = new Array();//hopefully the smallest values for determining significant digits.
     seriesindex = new Array();
-    for (id in data['executables']) {
+    for (var id in data['executables']) {
       var colorid = $("#executable > div.boxbody").find("input[value='"+id+"']").attr('id').slice(10);
       while (colorid > seriesColors.length) { colorid -= seriesColors.length;}
       series.push({
@@ -53,8 +53,17 @@
         "color": seriesColors[colorid-1]
       });
       seriesindex.push(id);
-      plotdata.push(data['executables'][id]);
-      lastvalues.push(data['executables'][id][0][1]);
+      var datapoints = new Array();
+      for (var datapointId in data['executables'][id]) {
+        var datapoint = data['executables'][id][datapointId];
+        datapoints.push([
+            datapoint.date,
+            datapoint.value,
+            datapoint.std_dev,
+            datapoint.commitid]);
+      }
+      plotdata.push(datapoints);
+      lastvalues.push(data['executables'][id][0].value);
     }
     if (data["baseline"] != "None") {
       series.push({

@@ -292,8 +292,10 @@ def gettimelinedata(request):
                 std_dev = ""
                 if res.std_dev != None: std_dev = res.std_dev
                 results.append(
-                    [str(res.revision.date), res.value, std_dev, res.revision.commitid]
-                )
+                    dict(date=str(res.revision.date),
+                         value=res.value,
+                         std_dev=std_dev,
+                         commitid=res.revision.commitid))
             timeline['executables'][executable] = results
             append = True
         if baselinerev != None and append:
