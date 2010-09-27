@@ -39,7 +39,34 @@
       permalinkToChanges(commitid, executableid, environment);
     }
   }
-      
+
+  function lineplotData(datapoint) {
+    return [
+      datapoint.date,
+      datapoint.value,
+      datapoint.std_dev,
+      datapoint.commitid];
+  }
+
+  function candlestickData(datapoint) {
+    return [
+      datapoint.date,
+      datapoint.value,
+      datapoint.std_dev,
+      datapoint.val_min,
+      datapoint.val_max,
+      datapoint.commitid];
+  }
+
+  function structurePlotData(dataFunction, data) {
+    var datapoints = Array();
+    for (var dataId in data) {
+      datapoints.push(dataFunction(data[dataId]));
+    }
+    return datapoints;
+  }
+
+
   function renderPlot(data) {
     var plotdata = new Array();
     var series = new Array();
@@ -48,22 +75,25 @@
     for (var id in data['executables']) {
       var colorid = $("#executable > div.boxbody").find("input[value='"+id+"']").attr('id').slice(10);
       while (colorid > seriesColors.length) { colorid -= seriesColors.length;}
-      series.push({
+
+      var settings = {
         "label": $("label[for*='executable" + colorid + "']").html(),
         "color": seriesColors[colorid-1]
-      });
-      seriesindex.push(id);
-      var datapoints = new Array();
-      for (var datapointId in data['executables'][id]) {
-        var datapoint = data['executables'][id][datapointId];
-        datapoints.push([
-            datapoint.date,
-            datapoint.value,
-            datapoint.std_dev,
-            datapoint.commitid]);
       }
+
+      var dataFunction = lineplotData;
+
+      if (data.executables[id].style == 'candlestick') {
+        settings['renderer'] = $.jqplot.OHLCRenderer;
+        settings['rendererOptions'] = {candleStick:true};
+        dataFunction = candlestickData;
+      }
+      series.push(settings);
+      seriesindex.push(id);
+
+      var datapoints = structurePlotData(dataFunction, data.executables[id].data);
       plotdata.push(datapoints);
-      lastvalues.push(data['executables'][id][0].value);
+      lastvalues.push(datapoints[0][1]);
     }
     if (data["baseline"] != "None") {
       series.push({
@@ -106,7 +136,7 @@
       legend: {show: true, location: 'nw'},
       highlighter: {
         tooltipLocation: 'nw',
-        yvalues: 3,
+        yvalues: 4,
         formatString:'<table class="jqplot-highlighter">    <tr><td>date:</td><td>%s</td></tr> <tr><td>result:</td><td>%s</td></tr> <tr><td>std dev:</td><td>%s</td></tr> <tr><td>commit:</td><td>%s</td></tr></table>'
       },
       cursor:{show:false, zoom:true, showTooltip:false, clickReset:true}
@@ -125,11 +155,11 @@
         var w = $("#plot").width();
         $("#plot").css('width', w - offset);
     }
-    
+
     //Render plot
     plot = $.jqplot('plot',  plotdata, plotoptions);
   }
-  
+
   function renderMiniplot(plotid, data) {
     var plotdata = new Array();
     var series = new Array();
@@ -140,17 +170,17 @@
         "label": $("label[for*='executable" + colorid + "']").html(),
         "color": seriesColors[colorid-1]
       });
-      plotdata.push(data['executables'][id]);
+      plotdata.push(structurePlotData(lineplotData, data.executables[id].data));
     }
     if (data["baseline"] != "None") {
       series.push({
         "color": baselineColor,
-        showMarker: false, 
+        showMarker: false,
         lineWidth: 1.5
       });
       plotdata.push(data["baseline"]);
     }
-    
+
     var plotoptions = {
       title: {text: data['benchmark'], fontSize: '1.1em'},
       seriesDefaults: {lineWidth: 2, markerOptions:{style:'circle', size: 6}},

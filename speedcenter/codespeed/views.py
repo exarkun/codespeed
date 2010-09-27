@@ -277,7 +277,7 @@ def gettimelinedata(request):
         timeline['lessisbetter'] = lessisbetter
         timeline['executables'] = {}
         timeline['baseline'] = "None"
-        
+
         for executable in executables:
             resultquery = Result.objects.filter(
                     benchmark=bench
@@ -291,12 +291,17 @@ def gettimelinedata(request):
             for res in resultquery:
                 std_dev = ""
                 if res.std_dev != None: std_dev = res.std_dev
+                print vars(res)
                 results.append(
                     dict(date=str(res.revision.date),
                          value=res.value,
                          std_dev=std_dev,
+                         val_min=res.val_min,
+                         val_max=res.val_max,
                          commitid=res.revision.commitid))
-            timeline['executables'][executable] = results
+            timeline['executables'][executable] = dict(
+                style='candlestick',
+                data=results)
             append = True
         if baselinerev != None and append:
             try:
