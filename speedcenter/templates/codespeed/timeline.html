@@ -122,9 +122,12 @@
     plot = $.jqplot('plot',  plotdata, plotoptions);
   }
   
-  function renderMiniplot(plotid, data) {
+  function renderMiniplot(plotid, data, showTicks /* = false */) {
     var plotdata = new Array();
     var series = new Array();
+    if (showTicks === undefined) {
+      showTicks = false;
+    }
     for (id in data['executables']) {
       var colorid = $("#executable > div.boxbody").find("input[value='"+id+"']").attr('id').slice(10);
       while (colorid > seriesColors.length) { colorid -= seriesColors.length;}
@@ -149,7 +152,7 @@
       series: series,
       axes: {
         yaxis: {
-          min: 0, autoscale:true, showTicks: false
+          min: 0, autoscale:true, showTicks: showTicks,
         },
         xaxis: {
           renderer:$.jqplot.DateAxisRenderer,
