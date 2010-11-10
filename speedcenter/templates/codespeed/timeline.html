@@ -23,6 +23,12 @@
     config["ben"] = $("input[name='benchmark']:checked").val();
     config["env"] = $("input[name='environments']:checked").val();
     config["revs"] = $("#revisions option:selected").val();
+
+    // Don't make the server know about the extra client UI.  Just
+    // make it send all the data back and we'll do the filtering.
+    if (config["ben"] == "filter") {
+        config["ben"] = "grid";
+    }
     return config;
   }
   
@@ -177,11 +183,7 @@
     } else if (data["timelines"].length == 0) {
       h = parseInt($("#content").css("height"));//get height for error message
       $("#plotgrid").html(getLoadText("No data available", h, false));
-    } else if ($("input[name='benchmark']:checked").val() != "grid") {
-      //render single plot when only one benchmark selected
-      renderPlot(data["timelines"][0]);
-      return 1;
-    } else {
+    } else if ($("input[name='benchmark']:checked").val() == "grid") {
       //Render Grid of plots
       $("#revisions").attr("disabled",true);
       for (bench in data["timelines"]) {
@@ -194,6 +196,26 @@
         });
         renderMiniplot(plotid, data["timelines"][bench]);
       }
+    } else if ($("input[name='benchmark']:checked").val() == "filter") {
+      //render just plots for benchmarks that match the filter string
+      $("#revisions").attr("disabled",true);
+      var filter = new RegExp($("#benchmarkfiltertext").val())
+      for (bench in data["timelines"]) {
+        if (filter.test(data["timelines"][bench]["benchmark"])) {
+          plotid = "plot_" + data["timelines"][bench]["benchmark_id"];
+          $("#plotgrid").append('<div id="' + plotid + '" class="miniplot"></div>');
+          $("#" + plotid).click(function() {
+            var benchid = $(this).attr("id").slice(5);
+            $("#benchmark_" + benchid).attr('checked', true);
+            refreshContent();
+          });
+          renderMiniplot(plotid, data["timelines"][bench]);
+        }
+      }
+    } else {
+      //render single plot when only one benchmark selected
+      renderPlot(data["timelines"][0]);
+      return 1;
     }
   }
   
@@ -282,6 +304,11 @@
     <li>
       <input id="benchmarkgrid" type="radio" name="benchmark" value="grid" />
       <label for="benchmarkgrid">Display all in a grid</label>
+    </li>
+    <li>
+      <input id="benchmarkfilter" type="radio" name="benchmark" value="filter" />
+      <label for="benchmarkfilter">Display matching</label>
+      <input id="benchmarkfiltertext" type="text" name="benchmark" />
     </li>
   </ul>{% endifnotequal %}
   <ul>{% for bench in benchmarks|dictsort:"name" %}
